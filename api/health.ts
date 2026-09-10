@@ -1,8 +1,8 @@
-export default function handler(req: any, res: any) {
+export default async function handler(req: any, res: any) {
   const origin = req.headers?.origin || '*';
   res.setHeader('Access-Control-Allow-Origin', origin);
   res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Origin, Content-Type, Accept, Authorization, x-api-key');
 
   if (req.method === 'OPTIONS') {
@@ -11,10 +11,7 @@ export default function handler(req: any, res: any) {
 
   return res.status(200).json({
     status: 'ok',
-    service: 'Corsi Arbitri FIP API Service',
-    endpoints: [
-      '/api/sendCourseInfoRequest',
-      '/api/health',
-    ],
+    message: 'Backend API attivo',
+    timestamp: new Date().toISOString(),
   });
 }
