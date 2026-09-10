@@ -1,0 +1,6 @@
+{
+  "name": "SMTP Mail Service & Dynamic Templates",
+  "description": "Servizio backend Node.js per invio email via SMTP con supporto per template HTML dinamici e parametri personalizzabili",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
