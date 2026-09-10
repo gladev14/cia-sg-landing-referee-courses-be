@@ -1,5 +1,19 @@
 import React from 'react';
-import { Mail, CheckCircle2, AlertTriangle, ShieldCheck, Terminal, FileText, Send, Server, History, GraduationCap } from 'lucide-react';
+import {
+  Mail,
+  CheckCircle2,
+  AlertTriangle,
+  ShieldCheck,
+  Terminal,
+  FileText,
+  Send,
+  Server,
+  History,
+  GraduationCap,
+  Key,
+  LogOut,
+  Lock,
+} from 'lucide-react';
 
 interface NavbarProps {
   activeTab: 'course' | 'send' | 'templates' | 'smtp' | 'docs' | 'logs';
@@ -10,9 +24,18 @@ interface NavbarProps {
     host: string;
   } | null;
   logsCount: number;
+  onLogout: () => void;
+  onOpenApiKeyModal: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ activeTab, onTabChange, smtpStatus, logsCount }) => {
+export const Navbar: React.FC<NavbarProps> = ({
+  activeTab,
+  onTabChange,
+  smtpStatus,
+  logsCount,
+  onLogout,
+  onOpenApiKeyModal,
+}) => {
   return (
     <header className="border-b border-slate-200 bg-white sticky top-0 z-30 shadow-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -37,11 +60,11 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, onTabChange, smtpStat
             </div>
           </div>
 
-          {/* Status Badge */}
-          <div className="flex items-center space-x-3">
+          {/* Status Badge & Auth Actions */}
+          <div className="flex items-center space-x-2 sm:space-x-3">
             {smtpStatus ? (
               <div
-                className={`hidden md:inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-medium border ${
+                className={`hidden lg:inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-medium border ${
                   smtpStatus.isConfigured
                     ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                     : 'bg-amber-50 text-amber-700 border-amber-200'
@@ -60,6 +83,34 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, onTabChange, smtpStat
                 )}
               </div>
             ) : null}
+
+            {/* Auth Badge */}
+            <div className="hidden sm:inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+              <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
+              <span>Autorizzato (Admin)</span>
+            </div>
+
+            {/* Pulsante Info API Key */}
+            <button
+              id="btn-nav-api-key"
+              onClick={onOpenApiKeyModal}
+              title="Visualizza chiavi ed esempi cURL autorizzati"
+              className="inline-flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 hover:text-slate-900 transition-colors"
+            >
+              <Key className="w-3.5 h-3.5 text-slate-600" />
+              <span className="hidden md:inline">Chiavi API</span>
+            </button>
+
+            {/* Pulsante Logout */}
+            <button
+              id="btn-nav-logout"
+              onClick={onLogout}
+              title="Disconnetti e blocca l'accesso al pannello"
+              className="inline-flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-colors"
+            >
+              <LogOut className="w-3.5 h-3.5 text-rose-600" />
+              <span className="hidden sm:inline">Disconnetti</span>
+            </button>
           </div>
         </div>
 

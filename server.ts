@@ -16,6 +16,13 @@ import {
   getOrCreateEtherealTransporter,
 } from './server/mailer.js';
 import { EmailTemplate, RenderTemplatePayload, SendEmailPayload } from './src/types/mail.js';
+import {
+  requireAuth,
+  handleLogin,
+  handleAuthStatus,
+  handleLogout,
+  getAdminApiKey,
+} from './server/auth.js';
 
 dotenv.config();
 
@@ -26,17 +33,42 @@ const PORT = 3000;
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// ==========================================
+// AUTORIZZAZIONE & SICUREZZA GLOBALE API
+// ==========================================
+
+// Endpoint pubblici di autenticazione e diagnostica
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', service: 'Node.js SMTP Mail Service', timestamp: new Date().toISOString() });
+});
+
+app.post('/api/auth/login', handleLogin);
+app.get('/api/auth/status', handleAuthStatus);
+app.get('/api/auth/me', handleAuthStatus);
+app.post('/api/auth/logout', handleLogout);
+
+// Info pubblica sulle modalità di autorizzazione (senza svelare la chiave segreta)
+app.get('/api/auth/info', (req, res) => {
+  res.json({
+    requiresAuth: true,
+    supportedMethods: [
+      'Authorization: Bearer <API_KEY_OR_TOKEN>',
+      'x-api-key: <API_KEY>',
+      'Browser Session Login (/api/auth/login)',
+    ],
+    hasConfiguredKey: Boolean(getAdminApiKey()),
+  });
+});
+
+// Middleware di protezione su TUTTI gli altri endpoint /api/*
+app.use('/api', requireAuth);
+
 // In-memory array per template personalizzati creati via API
 const customTemplates: EmailTemplate[] = [];
 
 // ==========================================
-// API ROUTES
+// API ROUTES (PROTETTE DA AUTORIZZAZIONE)
 // ==========================================
-
-// 1. Health check
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', service: 'Node.js SMTP Mail Service', timestamp: new Date().toISOString() });
-});
 
 // 2. Lista di tutti i template HTML disponibili
 app.get('/api/templates', (req, res) => {

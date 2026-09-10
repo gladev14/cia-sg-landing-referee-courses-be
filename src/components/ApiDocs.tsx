@@ -13,6 +13,7 @@ export const ApiDocs: React.FC = () => {
 
   const curlCode = `curl -X POST http://localhost:3000/api/send-email \\
   -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer cia-arbitri-2026" \\
   -d '{
     "to": "cliente@azienda.it",
     "templateId": "order_confirmation",
@@ -34,7 +35,7 @@ export const ApiDocs: React.FC = () => {
     }
   }'`;
 
-  const nodeCode = `// Esempio Node.js (con fetch nativo)
+  const nodeCode = `// Esempio Node.js (con fetch nativo ed header Authorization)
 async function sendNotificationEmail() {
   const payload = {
     to: "destinatario@azienda.it",
@@ -51,7 +52,10 @@ async function sendNotificationEmail() {
 
   const response = await fetch("http://localhost:3000/api/send-email", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer cia-arbitri-2026" // o header x-api-key
+    },
     body: JSON.stringify(payload)
   });
 
@@ -71,6 +75,10 @@ sendNotificationEmail();`;
   const pythonCode = `import requests
 
 url = "http://localhost:3000/api/send-email"
+headers = {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer cia-arbitri-2026"
+}
 
 payload = {
     "to": "destinatario@azienda.it",
@@ -84,7 +92,7 @@ payload = {
     }
 }
 
-response = requests.post(url, json=payload)
+response = requests.post(url, json=payload, headers=headers)
 result = response.json()
 
 if response.status_code == 200 and result.get("success"):
@@ -101,8 +109,32 @@ else:
           <span>Specifiche API & Guida Integrazione Backend</span>
         </h2>
         <p className="text-sm text-slate-500 mt-1">
-          Endpoint REST per integrare il servizio di invio mail via SMTP nei tuoi microservizi o applicazioni.
+          Endpoint REST protetti da autorizzazione per integrare il servizio di invio mail via SMTP nei tuoi microservizi o applicazioni.
         </p>
+      </div>
+
+      {/* Box Requisito Autorizzazione */}
+      <div className="bg-slate-900 text-white p-5 rounded-xl border border-slate-800 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2 text-sm font-bold text-amber-400">
+            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+            <span>Autenticazione Obbligatoria su Tutti gli Endpoint API</span>
+          </div>
+          <span className="text-xs bg-slate-800 px-2.5 py-1 rounded text-slate-300 font-mono">HTTP 401 Unauthorized se assente</span>
+        </div>
+        <p className="text-xs text-slate-300 leading-relaxed">
+          Tutte le richieste a <code className="text-emerald-400">/api/send-email</code>, <code className="text-emerald-400">/api/sendCourseInfoRequest</code>, <code className="text-emerald-400">/api/templates</code> e ai log devono includere una chiave valida tramite uno dei seguenti header:
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+          <div className="bg-slate-950 p-3 rounded-lg border border-slate-800">
+            <span className="text-[11px] text-slate-400 block mb-1 font-semibold">1. Standard Bearer Token:</span>
+            <code className="text-xs text-emerald-400 font-mono select-all">Authorization: Bearer cia-arbitri-2026</code>
+          </div>
+          <div className="bg-slate-950 p-3 rounded-lg border border-slate-800">
+            <span className="text-[11px] text-slate-400 block mb-1 font-semibold">2. Header Custom x-api-key:</span>
+            <code className="text-xs text-emerald-400 font-mono select-all">x-api-key: cia-arbitri-2026</code>
+          </div>
+        </div>
       </div>
 
       {/* Endpoint: POST /api/send-email */}
