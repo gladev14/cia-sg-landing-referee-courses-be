@@ -13,8 +13,13 @@ import {
   Phone,
   ArrowRight,
   ShieldCheck,
+  Server,
+  Globe,
+  Radio,
+  HelpCircle,
 } from 'lucide-react';
 import { CourseInfoRequestInput } from '../types/mail';
+import { getStoredToken } from '../utils/auth';
 
 // Mappa delle regioni con relative email regionali CIA
 const REGIONAL_EMAILS: Record<string, string> = {
@@ -67,6 +72,78 @@ export const CourseInfoFormTester: React.FC<CourseInfoFormTesterProps> = ({ onSu
   const [responseSuccess, setResponseSuccess] = useState<any>(null);
   const [responseError, setResponseError] = useState<string | null>(null);
 
+  // Selezione Server Backend di Destinazione
+  const [targetServerUrl, setTargetServerUrl] = useState<string>('/api/sendCourseInfoRequest');
+  const [customServerUrl, setCustomServerUrl] = useState<string>('https://corsiarbitri-fip-be.vercel.app/api/sendCourseInfoRequest');
+  const [isTestingServer, setIsTestingServer] = useState<boolean>(false);
+  const [serverDiagnostic, setServerDiagnostic] = useState<{
+    tested: boolean;
+    status: 'success' | 'error' | 'warning';
+    title: string;
+    message: string;
+    details?: string;
+  } | null>(null);
+
+  const activeEndpointUrl = targetServerUrl === 'custom' ? customServerUrl.trim() : targetServerUrl;
+
+  const testServerConnection = async () => {
+    setIsTestingServer(true);
+    setServerDiagnostic(null);
+
+    const urlToTest = activeEndpointUrl;
+    try {
+      // 1. Proviamo a testare la rotta di health o la rotta stessa con OPTIONS/GET
+      let healthUrl = urlToTest;
+      if (healthUrl.includes('/api/')) {
+        healthUrl = healthUrl.substring(0, healthUrl.indexOf('/api/') + 5) + 'health';
+      }
+
+      const startTime = performance.now();
+      const res = await fetch(healthUrl, {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+        },
+      });
+
+      const latency = Math.round(performance.now() - startTime);
+
+      if (res.ok) {
+        setServerDiagnostic({
+          tested: true,
+          status: 'success',
+          title: 'Server Raggiungibile & CORS Attivo',
+          message: `Il backend risponde correttamente (${res.status} ${res.statusText}) con latenza ${latency}ms. Permessi CORS OK!`,
+        });
+      } else if (res.status === 404) {
+        setServerDiagnostic({
+          tested: true,
+          status: 'error',
+          title: 'Errore 404 - Endpoint non trovato su Vercel',
+          message: `Il server risponde ma la route non è stata trovata (404 NOT_FOUND). Su Vercel è necessario configurare vercel.json e la cartella /api per distribuire le funzioni serverless.`,
+          details: `URL testato: ${healthUrl}`,
+        });
+      } else {
+        setServerDiagnostic({
+          tested: true,
+          status: 'warning',
+          title: `Risposta ${res.status} dal server`,
+          message: `Il server ha risposto con codice ${res.status}: ${res.statusText}`,
+        });
+      }
+    } catch (err: any) {
+      setServerDiagnostic({
+        tested: true,
+        status: 'error',
+        title: 'Impossibile raggiungere il server (Failed to fetch)',
+        message: err.message || 'Errore di connessione o restrizioni CORS del server remoto.',
+        details: `Causa tipica: Il server '${urlToTest}' è spento, ha restituito un errore 404/500 senza gli header 'Access-Control-Allow-Origin', oppure non accetta chiamate dal tuo dominio frontend.`,
+      });
+    } finally {
+      setIsTestingServer(false);
+    }
+  };
+
   // Calcolo del payload identico alla specifica inviata dal client
   const buildPayload = (): CourseInfoRequestInput => {
     return {
@@ -96,23 +173,46 @@ export const CourseInfoFormTester: React.FC<CourseInfoFormTesterProps> = ({ onSu
     setResponseError(null);
 
     const payload = buildPayload();
+    const token = getStoredToken();
 
     try {
-      const res = await fetch('/api/sendCourseInfoRequest', {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const res = await fetch(activeEndpointUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(payload),
       });
 
-      const data = await res.json();
+      const contentType = res.headers.get('content-type') || '';
+      let data: any = {};
+      if (contentType.includes('application/json')) {
+        data = await res.json();
+      } else {
+        const text = await res.text();
+        throw new Error(`Risposta non valida dal server (${res.status}): ${text.slice(0, 120)}`);
+      }
+
       if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Errore durante l\'invio della richiesta');
+        throw new Error(data.error || `Errore durante l'invio della richiesta (HTTP ${res.status})`);
       }
 
       setResponseSuccess(data);
       onSubmitted();
     } catch (err: any) {
-      setResponseError(err.message || 'Errore di connessione al backend');
+      const msg = err.message || 'Errore di connessione al backend';
+      if (msg.includes('Failed to fetch') || msg.includes('NetworkError')) {
+        setResponseError(
+          `Impossibile raggiungere il server (${activeEndpointUrl}): Failed to fetch. Verifica la connessione di rete o i permessi CORS del backend.`
+        );
+      } else {
+        setResponseError(msg);
+      }
     } finally {
       setIsSending(false);
     }
@@ -182,16 +282,172 @@ export const CourseInfoFormTester: React.FC<CourseInfoFormTesterProps> = ({ onSu
 
       {/* Messaggio di errore */}
       {responseError && (
-        <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl flex items-center justify-between text-rose-800">
-          <div className="flex items-center space-x-2">
-            <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
-            <span className="text-xs font-semibold">{responseError}</span>
+        <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl space-y-2 text-rose-800">
+          <div className="flex items-start justify-between">
+            <div className="flex items-start space-x-2">
+              <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+              <div>
+                <span className="text-xs font-bold block">Errore Connessione / CORS</span>
+                <span className="text-xs font-medium">{responseError}</span>
+              </div>
+            </div>
+            <button onClick={() => setResponseError(null)} className="text-xs text-rose-600 hover:text-rose-800 underline">
+              Chiudi
+            </button>
           </div>
-          <button onClick={() => setResponseError(null)} className="text-xs underline">
-            Chiudi
-          </button>
+          {responseError.includes('corsiarbitri-fip-be.vercel.app') && (
+            <div className="text-xs bg-rose-100/70 p-2.5 rounded-lg border border-rose-200 mt-2 text-rose-900 leading-relaxed">
+              <strong>Diagnosi Vercel:</strong> Il backend su Vercel (<code>https://corsiarbitri-fip-be.vercel.app</code>) restituiva errore 404 (NOT_FOUND) poiché su Vercel i server Node Express necessitano di un file di configurazione <code>vercel.json</code> e dell'entrypoint serverless <code>api/index.ts</code>. Abbiamo ora aggiunto questi file nel repository! Nel frattempo, puoi selezionare qui sotto il <strong>Server Locale / Attuale</strong> per inviare le richieste con successo immediato.
+            </div>
+          )}
         </div>
       )}
+
+      {/* Pannello Selezione Destinazione Backend & Strumento Diagnostica CORS */}
+      <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-100 pb-3">
+          <div className="flex items-center space-x-2">
+            <Server className="w-4 h-4 text-blue-600" />
+            <h3 className="text-sm font-bold text-slate-900">
+              Destinazione Chiamata API (<code className="text-xs font-mono text-blue-700">sendCourseInfoRequest</code>)
+            </h3>
+          </div>
+          <button
+            type="button"
+            id="btn-test-backend-connection"
+            onClick={testServerConnection}
+            disabled={isTestingServer}
+            className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50 cursor-pointer"
+          >
+            {isTestingServer ? (
+              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Radio className="w-3.5 h-3.5 text-blue-600" />
+            )}
+            <span>{isTestingServer ? 'Verifica in corso...' : 'Test Connessione & Permessi CORS'}</span>
+          </button>
+        </div>
+
+        {/* Radio selector server */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+          <label
+            className={`p-3 rounded-xl border cursor-pointer flex flex-col justify-between space-y-2 transition-all ${
+              targetServerUrl === '/api/sendCourseInfoRequest'
+                ? 'border-blue-500 bg-blue-50/50 ring-1 ring-blue-500'
+                : 'border-slate-200 hover:border-slate-300 bg-white'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-slate-800 flex items-center space-x-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                <span>Server Attuale (Locale)</span>
+              </span>
+              <input
+                type="radio"
+                name="targetServer"
+                checked={targetServerUrl === '/api/sendCourseInfoRequest'}
+                onChange={() => {
+                  setTargetServerUrl('/api/sendCourseInfoRequest');
+                  setServerDiagnostic(null);
+                }}
+                className="text-blue-600 focus:ring-blue-500"
+              />
+            </div>
+            <p className="text-[11px] text-slate-500 font-mono break-all">
+              /api/sendCourseInfoRequest
+            </p>
+            <span className="text-[10px] text-emerald-700 font-medium">Attivo con CORS & SMTP</span>
+          </label>
+
+          <label
+            className={`p-3 rounded-xl border cursor-pointer flex flex-col justify-between space-y-2 transition-all ${
+              targetServerUrl === 'https://corsiarbitri-fip-be.vercel.app/api/sendCourseInfoRequest'
+                ? 'border-blue-500 bg-blue-50/50 ring-1 ring-blue-500'
+                : 'border-slate-200 hover:border-slate-300 bg-white'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-slate-800 flex items-center space-x-1.5">
+                <Globe className="w-3.5 h-3.5 text-slate-600" />
+                <span>Backend Vercel</span>
+              </span>
+              <input
+                type="radio"
+                name="targetServer"
+                checked={targetServerUrl === 'https://corsiarbitri-fip-be.vercel.app/api/sendCourseInfoRequest'}
+                onChange={() => {
+                  setTargetServerUrl('https://corsiarbitri-fip-be.vercel.app/api/sendCourseInfoRequest');
+                  setServerDiagnostic(null);
+                }}
+                className="text-blue-600 focus:ring-blue-500"
+              />
+            </div>
+            <p className="text-[11px] text-slate-500 font-mono break-all">
+              corsiarbitri-fip-be.vercel.app
+            </p>
+            <span className="text-[10px] text-slate-400 font-medium">Server remoto esterno</span>
+          </label>
+
+          <label
+            className={`p-3 rounded-xl border cursor-pointer flex flex-col justify-between space-y-2 transition-all ${
+              targetServerUrl === 'custom'
+                ? 'border-blue-500 bg-blue-50/50 ring-1 ring-blue-500'
+                : 'border-slate-200 hover:border-slate-300 bg-white'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-slate-800">URL Personalizzato</span>
+              <input
+                type="radio"
+                name="targetServer"
+                checked={targetServerUrl === 'custom'}
+                onChange={() => {
+                  setTargetServerUrl('custom');
+                  setServerDiagnostic(null);
+                }}
+                className="text-blue-600 focus:ring-blue-500"
+              />
+            </div>
+            <input
+              type="text"
+              value={customServerUrl}
+              onChange={(e) => setCustomServerUrl(e.target.value)}
+              disabled={targetServerUrl !== 'custom'}
+              placeholder="https://..."
+              className="w-full px-2 py-1 text-xs border border-slate-200 rounded font-mono bg-white disabled:bg-slate-100"
+            />
+            <span className="text-[10px] text-slate-400">Inserisci endpoint personalizzato</span>
+          </label>
+        </div>
+
+        {/* Box Risultato Test Diagnostico */}
+        {serverDiagnostic && (
+          <div
+            className={`p-3.5 rounded-xl border text-xs leading-relaxed ${
+              serverDiagnostic.status === 'success'
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
+                : serverDiagnostic.status === 'warning'
+                ? 'bg-amber-50 border-amber-200 text-amber-900'
+                : 'bg-rose-50 border-rose-200 text-rose-900'
+            }`}
+          >
+            <div className="flex items-center space-x-2 font-bold mb-1">
+              {serverDiagnostic.status === 'success' ? (
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              ) : (
+                <AlertCircle className="w-4 h-4 text-rose-600" />
+              )}
+              <span>{serverDiagnostic.title}</span>
+            </div>
+            <p>{serverDiagnostic.message}</p>
+            {serverDiagnostic.details && (
+              <div className="mt-1.5 p-2 bg-white/70 rounded text-[11px] font-mono text-slate-700 border border-slate-200/60">
+                {serverDiagnostic.details}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Layout Grid: Modulo Form a Sinistra, JSON & Routing a Destra */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">

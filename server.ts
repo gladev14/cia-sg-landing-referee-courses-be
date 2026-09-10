@@ -22,12 +22,51 @@ import {
   handleAuthStatus,
   handleLogout,
   getAdminApiKey,
+  extractAuthToken,
+  validateTokenOrKey,
 } from './server/auth.js';
+import cors from 'cors';
 
 dotenv.config();
 
 const app = express();
 const PORT = 3000;
+
+// Configurazione CORS universale e permissiva per qualsiasi frontend (Vercel, localhost, etc.)
+app.use(
+  cors({
+    origin: true,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: [
+      'Origin',
+      'X-Requested-With',
+      'Content-Type',
+      'Accept',
+      'Authorization',
+      'x-api-key',
+      'x-auth-token',
+    ],
+    exposedHeaders: ['Authorization'],
+  })
+);
+
+// Fallback manuale per garantire sempre header CORS e gestire istantaneamente OPTIONS
+app.use((req, res, next) => {
+  const origin = req.headers.origin || '*';
+  res.setHeader('Access-Control-Allow-Origin', origin);
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'Origin, X-Requested-With, Content-Type, Accept, Authorization, x-api-key, x-auth-token'
+  );
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
+  }
+  next();
+});
 
 // Permette payload JSON per parametri e template ampi
 app.use(express.json({ limit: '10mb' }));
@@ -60,7 +99,118 @@ app.get('/api/auth/info', (req, res) => {
   });
 });
 
-// Middleware di protezione su TUTTI gli altri endpoint /api/*
+// Endpoint dedicato: sendCourseInfoRequest (Richiesta Informazioni Corsi CIA con routing regionale)
+// Supporta sia chiamate dal FE pubblico dei candidati sia chiamate autorizzate
+const handleCourseInfoRequest = async (req: express.Request, res: express.Response) => {
+  try {
+    // Se un token viene passato, deve essere valido
+    const token = extractAuthToken(req);
+    if (token) {
+      const authResult = validateTokenOrKey(token);
+      if (!authResult.valid) {
+        return res.status(401).json({
+          success: false,
+          error: 'Credenziale di autorizzazione non valida.',
+        });
+      }
+    }
+
+    const {
+      region,
+      name,
+      surname,
+      city,
+      mail,
+      telephone,
+      recipient,
+      coordinator,
+      to_email,
+      admin_email,
+      cc_email,
+      regional_email,
+      regional_committee,
+      submitted_at,
+    } = req.body || {};
+
+    // Validazione parametri essenziali
+    if (!name || !surname || !mail) {
+      return res.status(400).json({
+        success: false,
+        error: 'Parametri obbligatori mancanti: name, surname, mail.',
+      });
+    }
+
+    // Risoluzione destinatari e routing
+    const targetRecipient = to_email || recipient || regional_email;
+    if (!targetRecipient) {
+      return res.status(400).json({
+        success: false,
+        error: 'Nessun indirizzo destinatario specificato (recipient / to_email / regional_email).',
+      });
+    }
+
+    const targetCc = cc_email || mail;
+    const targetBcc = coordinator || admin_email;
+    const computedCommittee = regional_committee || (region ? `CIA ${region}` : 'Comitato Regionale CIA');
+    const computedSubmittedAt =
+      submitted_at || new Date().toLocaleString('it-IT', { timeZone: 'Europe/Rome' });
+
+    const subject = `Segnalazione corso arbitri - ${name} ${surname} (${city || region || 'N/D'})`;
+    const text = `Caro Presidente,\nti segnaliamo che ${name} ${surname} è interessato a partecipare al corso arbitri presso la tua regione; la sua provincia di residenza è ${city || 'N/D'}.\n\nTi chiediamo di contattare ${name}, di seguito i suoi recapiti:\n- indirizzo mail -> ${mail}\n- cellulare -> ${telephone}\n\nGrazie per la collaborazione.\nA presto,\nCMEL`;
+
+    const payload: SendEmailPayload = {
+      to: targetRecipient,
+      cc: targetCc,
+      bcc: targetBcc,
+      replyTo: `${name} ${surname} <${mail}>`,
+      subject,
+      text,
+      templateId: 'course_info_request',
+      data: {
+        region: region || '',
+        name,
+        surname,
+        city: city || '',
+        mail,
+        telephone: telephone || '',
+        recipient: targetRecipient,
+        coordinator: coordinator || admin_email || '',
+        to_email: targetRecipient,
+        admin_email: admin_email || coordinator || '',
+        cc_email: targetCc,
+        regional_email: regional_email || targetRecipient,
+        regional_committee: computedCommittee,
+        submitted_at: computedSubmittedAt,
+      },
+    };
+
+    const result = await sendEmailService(payload);
+
+    res.json({
+      success: true,
+      message: `Richiesta informazioni corso per ${name} ${surname} inviata con successo a ${targetRecipient}`,
+      routing: {
+        to: targetRecipient,
+        cc: targetCc,
+        bcc: targetBcc,
+        replyTo: `${name} ${surname} <${mail}>`,
+        regional_committee: computedCommittee,
+      },
+      delivery: result,
+    });
+  } catch (err: any) {
+    console.error('[API sendCourseInfoRequest error]', err);
+    res.status(500).json({
+      success: false,
+      error: err.message || 'Errore durante l\'invio della richiesta informazioni corso',
+    });
+  }
+};
+
+app.post('/api/sendCourseInfoRequest', handleCourseInfoRequest);
+app.post('/api/send-course-info-request', handleCourseInfoRequest);
+
+// Middleware di protezione su TUTTI gli altri endpoint /api/* (invio email arbitrarie, configurazione SMTP, log)
 app.use('/api', requireAuth);
 
 // In-memory array per template personalizzati creati via API
@@ -178,104 +328,6 @@ app.post('/api/send-email', async (req, res) => {
   }
 });
 
-// 6b. Endpoint dedicato: sendCourseInfoRequest (Richiesta Informazioni Corsi CIA con routing regionale)
-const handleCourseInfoRequest = async (req: express.Request, res: express.Response) => {
-  try {
-    const {
-      region,
-      name,
-      surname,
-      city,
-      mail,
-      telephone,
-      recipient,
-      coordinator,
-      to_email,
-      admin_email,
-      cc_email,
-      regional_email,
-      regional_committee,
-      submitted_at,
-    } = req.body || {};
-
-    // Validazione parametri essenziali
-    if (!name || !surname || !mail) {
-      return res.status(400).json({
-        success: false,
-        error: 'Parametri obbligatori mancanti: name, surname, mail.',
-      });
-    }
-
-    // Risoluzione destinatari e routing
-    const targetRecipient = to_email || recipient || regional_email;
-    if (!targetRecipient) {
-      return res.status(400).json({
-        success: false,
-        error: 'Nessun indirizzo destinatario specificato (recipient / to_email / regional_email).',
-      });
-    }
-
-    const targetCc = cc_email || mail;
-    const targetBcc = coordinator || admin_email;
-    const computedCommittee = regional_committee || (region ? `CIA ${region}` : 'Comitato Regionale CIA');
-    const computedSubmittedAt =
-      submitted_at || new Date().toLocaleString('it-IT', { timeZone: 'Europe/Rome' });
-
-    const subject = `Segnalazione corso arbitri - ${name} ${surname} (${city || region || 'N/D'})`;
-    const text = `Caro Presidente,\nti segnaliamo che ${name} ${surname} è interessato a partecipare al corso arbitri presso la tua regione; la sua provincia di residenza è ${city || 'N/D'}.\n\nTi chiediamo di contattare ${name}, di seguito i suoi recapiti:\n- indirizzo mail -> ${mail}\n- cellulare -> ${telephone}\n\nGrazie per la collaborazione.\nA presto,\nCMEL`;
-
-    const payload: SendEmailPayload = {
-      to: targetRecipient,
-      cc: targetCc,
-      bcc: targetBcc,
-      replyTo: `${name} ${surname} <${mail}>`,
-      subject,
-      text,
-      templateId: 'course_info_request',
-      data: {
-        region: region || '',
-        name,
-        surname,
-        city: city || '',
-        mail,
-        telephone: telephone || '',
-        recipient: targetRecipient,
-        coordinator: coordinator || admin_email || '',
-        to_email: targetRecipient,
-        admin_email: admin_email || coordinator || '',
-        cc_email: targetCc,
-        regional_email: regional_email || targetRecipient,
-        regional_committee: computedCommittee,
-        submitted_at: computedSubmittedAt,
-      },
-    };
-
-    const result = await sendEmailService(payload);
-
-    res.json({
-      success: true,
-      message: `Richiesta informazioni corso per ${name} ${surname} inviata con successo a ${targetRecipient}`,
-      routing: {
-        to: targetRecipient,
-        cc: targetCc,
-        bcc: targetBcc,
-        replyTo: `${name} ${surname} <${mail}>`,
-        regional_committee: computedCommittee,
-      },
-      delivery: result,
-    });
-  } catch (err: any) {
-    console.error('[API sendCourseInfoRequest error]', err);
-    res.status(500).json({
-      success: false,
-      error: err.message || 'Errore durante l\'invio della richiesta informazioni corso',
-    });
-  }
-};
-
-app.post('/api/sendCourseInfoRequest', handleCourseInfoRequest);
-app.post('/api/send-course-info-request', handleCourseInfoRequest);
-
 // 7. Verifica connessione server SMTP
 app.post('/api/smtp/verify', async (req, res) => {
   try {
@@ -354,6 +406,12 @@ async function start() {
   });
 }
 
-start().catch((err) => {
-  console.error('Errore avvio server:', err);
-});
+export default app;
+export { app };
+
+// Avvio server standalone se non eseguito in ambiente serverless
+if (!process.env.VERCEL) {
+  start().catch((err) => {
+    console.error('Errore avvio server:', err);
+  });
+}

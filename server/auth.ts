@@ -87,6 +87,11 @@ export function extractAuthToken(req: Request): string | undefined {
  * Blocca qualsiasi richiesta sprovvista di autorizzazione valida con HTTP 401
  */
 export function requireAuth(req: Request, res: Response, next: NextFunction) {
+  // Le richieste HTTP OPTIONS (CORS preflight) non devono mai essere bloccate con 401
+  if (req.method === 'OPTIONS') {
+    return next();
+  }
+
   const token = extractAuthToken(req);
   const result = validateTokenOrKey(token);
 
