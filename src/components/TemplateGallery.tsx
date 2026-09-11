@@ -12,6 +12,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { EmailTemplate } from '../types/mail';
+import { authFetch } from '../utils/auth';
 
 interface TemplateGalleryProps {
   templates: EmailTemplate[];
@@ -54,7 +55,7 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({
     setCreateError(null);
 
     try {
-      const res = await fetch('/api/templates', {
+      const res = await authFetch('/api/templates', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

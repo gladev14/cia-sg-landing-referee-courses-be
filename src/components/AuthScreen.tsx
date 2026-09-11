@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Shield, Lock, Eye, EyeOff, ArrowRight, AlertCircle, KeyRound, Terminal, CheckCircle2 } from 'lucide-react';
+import { Shield, Lock, Eye, EyeOff, ArrowRight, AlertCircle, KeyRound } from 'lucide-react';
 import { setStoredToken } from '../utils/auth';
 
 interface AuthScreenProps {
@@ -9,7 +9,6 @@ interface AuthScreenProps {
 export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
   const [credential, setCredential] = useState('');
   const [showKey, setShowKey] = useState(false);
-  const [rememberMe, setRememberMe] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -17,7 +16,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
     e.preventDefault();
     const cleanKey = credential.trim();
     if (!cleanKey) {
-      setErrorMessage('Inserisci la chiave API o la password amministratore.');
+      setErrorMessage('Inserisci la password.');
       return;
     }
 
@@ -37,18 +36,14 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
         throw new Error(data.error || 'Credenziale di autorizzazione non valida.');
       }
 
-      // Salva token nella sessione o local storage
-      setStoredToken(data.token, rememberMe);
+      // Salva token nella sessione / local storage
+      setStoredToken(data.token, true);
       onAuthenticated();
     } catch (err: any) {
       setErrorMessage(err.message || 'Errore durante la verifica delle credenziali.');
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleUseDefaultKey = () => {
-    setCredential('cia-arbitri-2026');
   };
 
   return (
@@ -83,16 +78,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label htmlFor="auth-credential" className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5 flex items-center justify-between">
-                <span>Chiave di Autorizzazione / Password</span>
-                <button
-                  type="button"
-                  onClick={handleUseDefaultKey}
-                  className="text-[11px] text-blue-400 hover:text-blue-300 hover:underline flex items-center space-x-1"
-                >
-                  <KeyRound className="w-3 h-3" />
-                  <span>Usa predefinita</span>
-                </button>
+              <label htmlFor="auth-credential" className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
+                <span>Password</span>
               </label>
 
               <div className="relative rounded-xl shadow-xs">
@@ -108,7 +95,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
                   autoComplete="current-password"
                   value={credential}
                   onChange={(e) => setCredential(e.target.value)}
-                  placeholder="Inserisci password o ADMIN_API_KEY..."
+                  placeholder="Inserisci password..."
                   className="block w-full rounded-xl border border-slate-700 bg-slate-900/90 pl-10 pr-10 py-2.5 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors"
                 />
                 <button
@@ -129,18 +116,6 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
               </div>
             )}
 
-            <div className="flex items-center justify-between">
-              <label className="flex items-center text-xs text-slate-400 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="w-4 h-4 text-blue-600 bg-slate-900 border-slate-700 rounded focus:ring-blue-500 focus:ring-offset-slate-900"
-                />
-                <span className="ml-2">Resta collegato su questo browser</span>
-              </label>
-            </div>
-
             <div>
               <button
                 id="btn-login-submit"
@@ -159,23 +134,6 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
               </button>
             </div>
           </form>
-
-          {/* Guida Rapida API */}
-          <div className="mt-6 pt-6 border-t border-slate-700/60 text-xs text-slate-400 space-y-2">
-            <div className="flex items-center space-x-1.5 text-slate-300 font-semibold">
-              <Terminal className="w-3.5 h-3.5 text-blue-400" />
-              <span>Autorizzazione Chiamate API (cURL / Backend):</span>
-            </div>
-            <p className="text-[11px] leading-relaxed text-slate-400">
-              Per chiamare le API programmaticamente, includi l'header:
-            </p>
-            <div className="bg-slate-950 p-2.5 rounded-lg font-mono text-[11px] text-emerald-400 border border-slate-800 break-all select-all">
-              Authorization: Bearer cia-arbitri-2026
-            </div>
-            <p className="text-[10px] text-slate-500 italic">
-              Configurabile via variabile d'ambiente <code className="text-slate-400">ADMIN_API_KEY</code> nel file <code className="text-slate-400">.env</code>.
-            </p>
-          </div>
         </div>
       </div>
     </div>

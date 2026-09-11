@@ -14,6 +14,7 @@ import {
   ChevronUp,
 } from 'lucide-react';
 import { EmailTemplate, SendEmailResult } from '../types/mail';
+import { authFetch } from '../utils/auth';
 
 interface EmailSenderProps {
   templates: EmailTemplate[];
@@ -77,7 +78,7 @@ export const EmailSender: React.FC<EmailSenderProps> = ({
     setIsRendering(true);
     setRenderError(null);
     try {
-      const res = await fetch('/api/templates/render', {
+      const res = await authFetch('/api/templates/render', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -150,7 +151,7 @@ export const EmailSender: React.FC<EmailSenderProps> = ({
         payload.templateId = activeTemplate.id;
       }
 
-      const res = await fetch('/api/send-email', {
+      const res = await authFetch('/api/send-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

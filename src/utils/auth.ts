@@ -36,6 +36,48 @@ export function clearStoredToken(): void {
 }
 
 /**
+ * Wrapper autorizzato per chiamate fetch verso il backend
+ */
+export async function authFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  let url = '';
+  if (typeof input === 'string') {
+    url = input;
+  } else if (input instanceof URL) {
+    url = input.pathname;
+  } else if (typeof Request !== 'undefined' && input instanceof Request) {
+    url = input.url;
+  }
+
+  const isApiRequest = url.startsWith('/api') || url.includes('/api/');
+  const isLoginEndpoint = url.includes('/api/auth/login');
+
+  let finalInit: RequestInit = init ? { ...init } : {};
+
+  if (isApiRequest && !isLoginEndpoint) {
+    const token = getStoredToken();
+    if (token) {
+      const headers = new Headers(
+        finalInit.headers || (typeof Request !== 'undefined' && input instanceof Request ? input.headers : {})
+      );
+      if (!headers.has('Authorization') && !headers.has('x-api-key')) {
+        headers.set('Authorization', `Bearer ${token}`);
+      }
+      finalInit.headers = headers;
+    }
+  }
+
+  const response = await window.fetch(input, finalInit);
+
+  // Se l'API restituisce 401 e non è il tentativo di login stesso, segnala sessione non valida
+  if (response.status === 401 && isApiRequest && !isLoginEndpoint) {
+    clearStoredToken();
+    window.dispatchEvent(new CustomEvent('auth:unauthorized'));
+  }
+
+  return response;
+}
+
+/**
  * Verifica con il backend se il token memorizzato è ancora valido
  */
 export async function checkAuthStatus(): Promise<{ authenticated: boolean; role?: string }> {
@@ -45,7 +87,7 @@ export async function checkAuthStatus(): Promise<{ authenticated: boolean; role?
   }
 
   try {
-    const res = await fetch('/api/auth/status', {
+    const res = await window.fetch('/api/auth/status', {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -72,7 +114,7 @@ export async function performLogout(): Promise<void> {
   const token = getStoredToken();
   try {
     if (token) {
-      await fetch('/api/auth/logout', {
+      await window.fetch('/api/auth/logout', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -86,57 +128,30 @@ export async function performLogout(): Promise<void> {
 }
 
 /**
- * Installa un intercettore su window.fetch per iniettare l'header
- * Authorization automaticamente in tutte le chiamate ad /api/*
+ * Tenta di installare in modo sicuro l'intercettore solo se window.fetch è configurabile
  */
-let interceptorInstalled = false;
-
 export function initAuthInterceptor(): void {
-  if (interceptorInstalled || typeof window === 'undefined') return;
-  interceptorInstalled = true;
+  if (typeof window === 'undefined') return;
 
-  const originalFetch = window.fetch;
-
-  window.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-    let url = '';
-    if (typeof input === 'string') {
-      url = input;
-    } else if (input instanceof URL) {
-      url = input.pathname;
-    } else if (input instanceof Request) {
-      url = input.url;
+  try {
+    const desc = Object.getOwnPropertyDescriptor(window, 'fetch');
+    // Se ha solo un getter e non è configurabile, non sovrascrivere direttamente window.fetch
+    if (desc && !desc.writable && !desc.set && !desc.configurable) {
+      return;
     }
 
-    const isApiRequest = url.startsWith('/api') || url.includes('/api/');
-    const isLoginEndpoint = url.includes('/api/auth/login');
+    const originalFetch = window.fetch;
+    if (!originalFetch) return;
 
-    if (isApiRequest && !isLoginEndpoint) {
-      const token = getStoredToken();
-      if (token) {
-        init = init || {};
-        const headers = new Headers(init.headers || (input instanceof Request ? input.headers : {}));
-        if (!headers.has('Authorization') && !headers.has('x-api-key')) {
-          headers.set('Authorization', `Bearer ${token}`);
-        }
-        init.headers = headers;
-      }
+    // Sovrascrittura controllata protetta da try/catch
+    try {
+      window.fetch = (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+        return authFetch(input, init);
+      };
+    } catch {
+      // In ambienti sandbox o iframe dove window.fetch ha solo un getter, ignora l'errore
     }
-
-    const response = await originalFetch(input, init);
-
-    // Se l'API restituisce 401 e non è il tentativo di login stesso, segnala sessione non valida
-    if (response.status === 401 && isApiRequest && !isLoginEndpoint) {
-      clearStoredToken();
-      window.dispatchEvent(new CustomEvent('auth:unauthorized'));
-    }
-
-    return response;
-  };
-}
-
-/**
- * Wrapper alternativo esplicito
- */
-export async function authFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-  return window.fetch(input, init);
+  } catch {
+    // Silenzioso
+  }
 }

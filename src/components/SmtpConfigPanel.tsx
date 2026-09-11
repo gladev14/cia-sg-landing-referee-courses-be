@@ -12,6 +12,7 @@ import {
   Check,
   Info,
 } from 'lucide-react';
+import { authFetch } from '../utils/auth';
 
 interface SmtpConfigPanelProps {
   status: {
@@ -65,7 +66,7 @@ export const SmtpConfigPanel: React.FC<SmtpConfigPanelProps> = ({ status, onRefr
     if (testFrom) configOverride.from = testFrom;
 
     try {
-      const res = await fetch('/api/smtp/verify', {
+      const res = await authFetch('/api/smtp/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ smtpConfig: Object.keys(configOverride).length > 0 ? configOverride : undefined }),
@@ -87,7 +88,7 @@ export const SmtpConfigPanel: React.FC<SmtpConfigPanelProps> = ({ status, onRefr
   const handleGenerateEthereal = async () => {
     setIsGeneratingEthereal(true);
     try {
-      const res = await fetch('/api/smtp/test-account', { method: 'POST' });
+      const res = await authFetch('/api/smtp/test-account', { method: 'POST' });
       const data = await res.json();
       if (data.success) {
         setEtherealAccount(data.account);

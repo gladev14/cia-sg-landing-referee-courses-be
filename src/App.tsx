@@ -9,7 +9,7 @@ import { CourseInfoFormTester } from './components/CourseInfoFormTester';
 import { AuthScreen } from './components/AuthScreen';
 import { ApiKeyModal } from './components/ApiKeyModal';
 import { EmailTemplate, EmailLogEntry } from './types/mail';
-import { checkAuthStatus, performLogout } from './utils/auth';
+import { checkAuthStatus, performLogout, authFetch } from './utils/auth';
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -47,7 +47,7 @@ export default function App() {
   // Caricamento iniziale template (solo se autenticato)
   const fetchTemplates = useCallback(async () => {
     try {
-      const res = await fetch('/api/templates');
+      const res = await authFetch('/api/templates');
       if (!res.ok) return;
       const data = await res.json();
       if (data.templates && data.templates.length > 0) {
@@ -64,7 +64,7 @@ export default function App() {
   // Caricamento stato SMTP
   const fetchSmtpStatus = useCallback(async () => {
     try {
-      const res = await fetch('/api/smtp/status');
+      const res = await authFetch('/api/smtp/status');
       if (!res.ok) return;
       const data = await res.json();
       setSmtpStatus(data);
@@ -77,7 +77,7 @@ export default function App() {
   const fetchLogs = useCallback(async () => {
     setIsLoadingLogs(true);
     try {
-      const res = await fetch('/api/logs');
+      const res = await authFetch('/api/logs');
       if (!res.ok) return;
       const data = await res.json();
       if (data.logs) {
