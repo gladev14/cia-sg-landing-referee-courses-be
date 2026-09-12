@@ -71,6 +71,7 @@ export const CourseInfoFormTester: React.FC<CourseInfoFormTesterProps> = ({ onSu
   const [isSending, setIsSending] = useState(false);
   const [responseSuccess, setResponseSuccess] = useState<any>(null);
   const [responseError, setResponseError] = useState<string | null>(null);
+  const [previewMode, setPreviewMode] = useState<'visual' | 'text'>('visual');
 
   // Selezione Server Backend di Destinazione
   const [targetServerUrl, setTargetServerUrl] = useState<string>('/api/sendCourseInfoRequest');
@@ -224,18 +225,20 @@ export const CourseInfoFormTester: React.FC<CourseInfoFormTesterProps> = ({ onSu
     <div className="space-y-6">
       {/* Header Sezione */}
       <div className="bg-white p-6 rounded-xl border border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <div className="flex items-center space-x-2">
-            <span className="p-1.5 bg-blue-100 text-blue-700 rounded-lg">
-              <GraduationCap className="w-5 h-5" />
-            </span>
-            <h2 className="text-xl font-bold text-slate-900 tracking-tight">
-              Modulo Richiesta Informazioni Corsi CIA (<code className="text-blue-600 text-base font-mono">sendCourseInfoRequest</code>)
-            </h2>
+        <div className="flex items-start sm:items-center space-x-3.5">
+          <div className="p-1.5 bg-blue-50 border border-blue-100 rounded-xl shrink-0">
+            <img src="/assets/fip-logo-blue.png" alt="Logo FIP" className="w-10 h-10 object-contain" />
           </div>
-          <p className="text-sm text-slate-500 mt-1">
-            Collauda il flusso di invio con routing regionale automatico, notifica in copia al candidato (CC) e all'amministratore centrale.
-          </p>
+          <div>
+            <div className="flex items-center space-x-2">
+              <h2 className="text-xl font-bold text-slate-900 tracking-tight">
+                Modulo Richiesta Informazioni Corsi CIA (<code className="text-blue-600 text-base font-mono">sendCourseInfoRequest</code>)
+              </h2>
+            </div>
+            <p className="text-sm text-slate-500 mt-1">
+              Collauda il flusso di invio con routing regionale automatico, notifica in copia al candidato (CC) e all'amministratore centrale.
+            </p>
+          </div>
         </div>
 
         <div className="flex items-center space-x-2">
@@ -662,16 +665,104 @@ export const CourseInfoFormTester: React.FC<CourseInfoFormTesterProps> = ({ onSu
             </div>
           </div>
 
-          {/* Anteprima Testo Messaggio CIA */}
-          <div className="bg-white p-5 rounded-xl border border-slate-200 space-y-2.5">
+          {/* Anteprima Email Ufficiale CIA con Logo FIP */}
+          <div className="bg-white p-5 rounded-xl border border-slate-200 space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center space-x-1.5">
-                <Mail className="w-4 h-4 text-blue-600" />
-                <span>Anteprima Messaggio Compilato (CIA)</span>
-              </span>
-              <span className="text-[11px] font-medium text-slate-400">Template CIA</span>
+              <div className="flex items-center space-x-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center space-x-1.5">
+                  <Mail className="w-4 h-4 text-blue-600" />
+                  <span>Anteprima Messaggio (CIA)</span>
+                </span>
+                <span className="px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 rounded text-[10px] font-semibold">
+                  Logo FIP
+                </span>
+              </div>
+              <div className="flex items-center space-x-1 bg-slate-100 p-0.5 rounded-lg text-[11px] font-medium">
+                <button
+                  type="button"
+                  onClick={() => setPreviewMode('visual')}
+                  className={`px-2 py-1 rounded-md transition-all cursor-pointer ${
+                    previewMode === 'visual'
+                      ? 'bg-white text-blue-700 shadow-xs font-semibold'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Grafica Email
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPreviewMode('text')}
+                  className={`px-2 py-1 rounded-md transition-all cursor-pointer ${
+                    previewMode === 'text'
+                      ? 'bg-white text-blue-700 shadow-xs font-semibold'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Solo Testo
+                </button>
+              </div>
             </div>
-            <div className="bg-slate-50 p-3.5 rounded-lg border border-slate-200 text-xs text-slate-800 font-sans whitespace-pre-wrap leading-relaxed">
+
+            {previewMode === 'visual' ? (
+              <div className="border border-slate-200 rounded-xl overflow-hidden shadow-xs bg-slate-50">
+                {/* Header Blu FIP con Logo Bianco */}
+                <div className="bg-[#0c2356] px-4 py-3.5 border-b-2 border-blue-600 flex items-center space-x-3 text-white">
+                  <img
+                    src="/assets/fip-logo-white.png"
+                    alt="Logo FIP"
+                    className="w-10 h-10 object-contain shrink-0"
+                  />
+                  <div>
+                    <h4 className="text-sm font-bold tracking-tight text-white leading-tight">
+                      Comitato Italiano Arbitri
+                    </h4>
+                    <p className="text-[11px] text-blue-200 mt-0.5">
+                      Segnalazione candidato corso arbitri
+                    </p>
+                  </div>
+                </div>
+
+                {/* Contenuto Email */}
+                <div className="p-4 bg-white text-xs text-slate-700 space-y-3 leading-relaxed">
+                  <p className="font-semibold text-slate-900">Caro Presidente,</p>
+                  <p>
+                    ti segnaliamo che <strong>{formData.name || '...'} {formData.surname || '...'}</strong> è interessato a partecipare al corso arbitri presso la tua regione; la sua provincia di residenza è <strong>{formData.city || '...'}</strong>.
+                  </p>
+                  <p>
+                    Ti chiediamo di contattare <strong>{formData.name || '...'}</strong>, di seguito i suoi recapiti:
+                  </p>
+
+                  <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 border-l-4 border-l-blue-600 space-y-1.5 font-sans">
+                    <div>
+                      • <strong>indirizzo mail</strong>:{' '}
+                      <span className="text-blue-600 underline font-medium">{formData.mail || '...'}</span>
+                    </div>
+                    <div>
+                      • <strong>cellulare</strong>:{' '}
+                      <span className="text-slate-900 font-semibold">{formData.telephone || '...'}</span>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 text-slate-800">
+                    Grazie per la collaborazione.<br />
+                    <span className="font-semibold">A presto e buon lavoro!</span>
+                  </div>
+                </div>
+
+                {/* Footer Email con Logo Blu FIP */}
+                <div className="px-4 py-2.5 bg-slate-50 border-t border-slate-200 flex items-center justify-center space-x-2 text-[11px] text-slate-500">
+                  <img
+                    src="/assets/fip-logo-blue.png"
+                    alt="FIP"
+                    className="w-4 h-4 object-contain opacity-80"
+                  />
+                  <span>
+                    Comunicazione automatica generata per il Comitato Regionale CIA {formData.region}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-slate-50 p-3.5 rounded-lg border border-slate-200 text-xs text-slate-800 font-sans whitespace-pre-wrap leading-relaxed">
 {`Caro Presidente,
 ti segnaliamo che ${formData.name || '...'} ${formData.surname || '...'} è interessato a partecipare al corso arbitri presso la tua regione; la sua provincia di residenza è ${formData.city || '...'}.
  
@@ -682,7 +773,8 @@ Ti chiediamo di contattare ${formData.name || '...'}, di seguito i suoi recapiti
  
 Grazie per la collaborazione.
 A presto e buon lavoro!`}
-            </div>
+              </div>
+            )}
           </div>
 
           {/* Card Payload JSON Generato */}

@@ -1,5 +1,6 @@
 import Handlebars from 'handlebars';
 import { EmailTemplate } from '../src/types/mail.js';
+import { FIP_LOGO_WHITE_BASE64, FIP_LOGO_BLUE_BASE64 } from './fipLogos.js';
 
 // Registrazione helper personalizzati per Handlebars
 Handlebars.registerHelper('formatCurrency', function (value: number | string, currency: string = 'EUR') {
@@ -535,9 +536,13 @@ export const defaultTemplates: EmailTemplate[] = [
     body { margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; color: #1e293b; }
     .wrapper { width: 100%; background-color: #f8fafc; padding: 32px 0; }
     .container { max-width: 580px; margin: 0 auto; background: #ffffff; border-radius: 10px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.04); }
-    .header { background: #0f172a; padding: 22px 32px; border-bottom: 3px solid #2563eb; }
-    .header h2 { margin: 0; font-size: 17px; font-weight: 600; color: #ffffff; letter-spacing: -0.01em; }
-    .header p { margin: 4px 0 0; font-size: 12px; color: #94a3b8; }
+    .header { background: #0c2356; padding: 20px 28px; border-bottom: 3px solid #2563eb; }
+    .header table { width: 100%; border-collapse: collapse; }
+    .header td { vertical-align: middle; }
+    .header .logo-cell { width: 52px; padding-right: 16px; }
+    .header .logo-img { display: block; width: 46px; height: 46px; border: 0; }
+    .header h2 { margin: 0; font-size: 18px; font-weight: 700; color: #ffffff; letter-spacing: -0.01em; line-height: 1.25; }
+    .header p { margin: 3px 0 0; font-size: 12px; color: #cbd5e1; line-height: 1.3; }
     .content { padding: 32px; font-size: 15px; line-height: 1.65; color: #334155; }
     .salutation { font-size: 16px; font-weight: 600; color: #0f172a; margin-bottom: 16px; }
     .contacts-box { background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #2563eb; border-radius: 6px; padding: 16px 20px; margin: 20px 0; }
@@ -551,15 +556,27 @@ export const defaultTemplates: EmailTemplate[] = [
     .btn-secondary { display: inline-block; background-color: #059669; color: #ffffff !important; padding: 10px 18px; text-decoration: none; border-radius: 6px; font-size: 13px; font-weight: 600; margin-bottom: 8px; }
     .closing { margin-top: 24px; }
     .signature { font-weight: 700; color: #0f172a; font-size: 15px; margin-top: 4px; }
-    .footer { padding: 18px 32px; background: #f8fafc; border-top: 1px solid #e2e8f0; font-size: 12px; color: #94a3b8; text-align: center; }
+    .footer { padding: 16px 28px; background: #f8fafc; border-top: 1px solid #e2e8f0; font-size: 12px; color: #64748b; text-align: center; }
+    .footer table { margin: 0 auto; border-collapse: collapse; }
+    .footer td { vertical-align: middle; }
+    .footer-logo { display: block; width: 20px; height: 20px; border: 0; opacity: 0.85; margin-right: 8px; }
   </style>
 </head>
 <body>
   <div class="wrapper">
     <div class="container">
       <div class="header">
-        <h2>Comitato Italiano Arbitri</h2>
-        <p>Segnalazione candidato corso arbitri</p>
+        <table border="0" cellpadding="0" cellspacing="0" width="100%">
+          <tr>
+            <td class="logo-cell">
+              <img src="data:image/png;base64,${FIP_LOGO_WHITE_BASE64}" width="46" height="46" alt="Logo FIP" class="logo-img" />
+            </td>
+            <td>
+              <h2>Comitato Italiano Arbitri</h2>
+              <p>Segnalazione candidato corso arbitri</p>
+            </td>
+          </tr>
+        </table>
       </div>
 
       <div class="content">
@@ -598,7 +615,16 @@ export const defaultTemplates: EmailTemplate[] = [
       </div>
 
       <div class="footer">
-        Comunicazione automatica generata per il Comitato Regionale CIA {{region}}
+        <table border="0" cellpadding="0" cellspacing="0">
+          <tr>
+            <td>
+              <img src="data:image/png;base64,${FIP_LOGO_BLUE_BASE64}" width="20" height="20" alt="FIP" class="footer-logo" />
+            </td>
+            <td style="font-size: 12px; color: #64748b;">
+              Comunicazione automatica generata per il Comitato Regionale CIA {{region}}
+            </td>
+          </tr>
+        </table>
       </div>
     </div>
   </div>
