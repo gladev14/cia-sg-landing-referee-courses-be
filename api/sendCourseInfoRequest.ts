@@ -75,7 +75,7 @@ export default async function handler(req: any, res: any) {
       submitted_at || new Date().toLocaleString('it-IT', { timeZone: 'Europe/Rome' });
 
     const subject = `Segnalazione corso arbitri - ${name} ${surname} (${city || region || 'N/D'})`;
-    const text = `Caro Presidente,\nti segnaliamo che ${name} ${surname} è interessato a partecipare al corso arbitri presso la tua regione; la sua provincia di residenza è ${city || 'N/D'}.\n\nTi chiediamo di contattare ${name}, di seguito i suoi recapiti:\n- indirizzo mail -> ${mail}\n- cellulare -> ${telephone}\n\nGrazie per la collaborazione.\nA presto,\nCMEL`;
+    const text = `Caro Presidente,\nti segnaliamo che ${name} ${surname} è interessato a partecipare al corso arbitri presso la tua regione; la sua provincia di residenza è ${city || 'N/D'}.\n\nTi chiediamo di contattare ${name}, di seguito i suoi recapiti:\n\n• indirizzo mail: ${mail}\n• cellulare: ${telephone}\n\nGrazie per la collaborazione.\nA presto e buon lavoro!`;
 
     const payload: SendEmailPayload = {
       to: targetRecipient,

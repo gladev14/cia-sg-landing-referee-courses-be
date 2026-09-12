@@ -669,19 +669,19 @@ export const CourseInfoFormTester: React.FC<CourseInfoFormTesterProps> = ({ onSu
                 <Mail className="w-4 h-4 text-blue-600" />
                 <span>Anteprima Messaggio Compilato (CIA)</span>
               </span>
-              <span className="text-[11px] font-medium text-slate-400">Template CMEL</span>
+              <span className="text-[11px] font-medium text-slate-400">Template CIA</span>
             </div>
             <div className="bg-slate-50 p-3.5 rounded-lg border border-slate-200 text-xs text-slate-800 font-sans whitespace-pre-wrap leading-relaxed">
 {`Caro Presidente,
 ti segnaliamo che ${formData.name || '...'} ${formData.surname || '...'} è interessato a partecipare al corso arbitri presso la tua regione; la sua provincia di residenza è ${formData.city || '...'}.
  
 Ti chiediamo di contattare ${formData.name || '...'}, di seguito i suoi recapiti:
-- indirizzo mail -> ${formData.mail || '...'}
-- cellulare -> ${formData.telephone || '...'}
+
+• indirizzo mail: ${formData.mail || '...'}
+• cellulare: ${formData.telephone || '...'}
  
 Grazie per la collaborazione.
-A presto,
-CMEL`}
+A presto e buon lavoro!`}
             </div>
           </div>
 

@@ -14,7 +14,7 @@ Handlebars.registerHelper('formatCurrency', function (value: number | string, cu
     return `${num.toFixed(2)} €`;
   }
 });
-
+ 
 Handlebars.registerHelper('formatDate', function (value: string | number | Date) {
   if (!value) return '';
   try {
@@ -558,7 +558,7 @@ export const defaultTemplates: EmailTemplate[] = [
   <div class="wrapper">
     <div class="container">
       <div class="header">
-        <h2>Comitato Italiano Arbitri • CMEL</h2>
+        <h2>Comitato Italiano Arbitri</h2>
         <p>Segnalazione candidato corso arbitri</p>
       </div>
 
@@ -575,8 +575,8 @@ export const defaultTemplates: EmailTemplate[] = [
 
         <div class="contacts-box">
           <ul class="contacts-list">
-            <li>• <strong>indirizzo mail</strong> -&gt; <a href="mailto:{{mail}}?subject=Corso%20Arbitri%20CIA" class="link-mail">{{mail}}</a></li>
-            <li>• <strong>cellulare</strong> -&gt; <a href="tel:{{telephone}}" class="link-tel">{{telephone}}</a></li>
+            <li>• <strong>indirizzo mail</strong>: <a href="mailto:{{mail}}?subject=Corso%20Arbitri%20CIA" class="link-mail">{{mail}}</a></li>
+            <li>• <strong>cellulare</strong>: <a href="tel:{{telephone}}" class="link-tel">{{telephone}}</a></li>
           </ul>
         </div>
 
@@ -593,8 +593,7 @@ export const defaultTemplates: EmailTemplate[] = [
 
         <div class="closing">
           Grazie per la collaborazione.<br>
-          A presto,<br>
-          <div class="signature">CMEL</div>
+          A presto e buon lavoro!
         </div>
       </div>
 
