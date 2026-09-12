@@ -225,20 +225,18 @@ export const CourseInfoFormTester: React.FC<CourseInfoFormTesterProps> = ({ onSu
     <div className="space-y-6">
       {/* Header Sezione */}
       <div className="bg-white p-6 rounded-xl border border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-start sm:items-center space-x-3.5">
-          <div className="p-1.5 bg-blue-50 border border-blue-100 rounded-xl shrink-0">
-            <img src="/assets/fip-logo-blue.png" alt="Logo FIP" className="w-10 h-10 object-contain" />
+        <div>
+          <div className="flex items-center space-x-2">
+            <span className="p-1.5 bg-blue-100 text-blue-700 rounded-lg">
+              <GraduationCap className="w-5 h-5" />
+            </span>
+            <h2 className="text-xl font-bold text-slate-900 tracking-tight">
+              Modulo Richiesta Informazioni Corsi CIA (<code className="text-blue-600 text-base font-mono">sendCourseInfoRequest</code>)
+            </h2>
           </div>
-          <div>
-            <div className="flex items-center space-x-2">
-              <h2 className="text-xl font-bold text-slate-900 tracking-tight">
-                Modulo Richiesta Informazioni Corsi CIA (<code className="text-blue-600 text-base font-mono">sendCourseInfoRequest</code>)
-              </h2>
-            </div>
-            <p className="text-sm text-slate-500 mt-1">
-              Collauda il flusso di invio con routing regionale automatico, notifica in copia al candidato (CC) e all'amministratore centrale.
-            </p>
-          </div>
+          <p className="text-sm text-slate-500 mt-1">
+            Collauda il flusso di invio con routing regionale automatico, notifica in copia al candidato (CC) e all'amministratore centrale.
+          </p>
         </div>
 
         <div className="flex items-center space-x-2">
@@ -665,16 +663,13 @@ export const CourseInfoFormTester: React.FC<CourseInfoFormTesterProps> = ({ onSu
             </div>
           </div>
 
-          {/* Anteprima Email Ufficiale CIA con Logo FIP */}
+          {/* Anteprima Email Ufficiale CIA */}
           <div className="bg-white p-5 rounded-xl border border-slate-200 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center space-x-1.5">
                   <Mail className="w-4 h-4 text-blue-600" />
                   <span>Anteprima Messaggio (CIA)</span>
-                </span>
-                <span className="px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 rounded text-[10px] font-semibold">
-                  Logo FIP
                 </span>
               </div>
               <div className="flex items-center space-x-1 bg-slate-100 p-0.5 rounded-lg text-[11px] font-medium">
@@ -705,21 +700,14 @@ export const CourseInfoFormTester: React.FC<CourseInfoFormTesterProps> = ({ onSu
 
             {previewMode === 'visual' ? (
               <div className="border border-slate-200 rounded-xl overflow-hidden shadow-xs bg-slate-50">
-                {/* Header Blu FIP con Logo Bianco */}
-                <div className="bg-[#0c2356] px-4 py-3.5 border-b-2 border-blue-600 flex items-center space-x-3 text-white">
-                  <img
-                    src="/assets/fip-logo-white.png"
-                    alt="Logo FIP"
-                    className="w-10 h-10 object-contain shrink-0"
-                  />
-                  <div>
-                    <h4 className="text-sm font-bold tracking-tight text-white leading-tight">
-                      Comitato Italiano Arbitri
-                    </h4>
-                    <p className="text-[11px] text-blue-200 mt-0.5">
-                      Segnalazione candidato corso arbitri
-                    </p>
-                  </div>
+                {/* Header Blu CIA */}
+                <div className="bg-[#0c2356] px-5 py-4 border-b-2 border-blue-600 text-white">
+                  <h4 className="text-sm font-bold tracking-tight text-white leading-tight">
+                    Comitato Italiano Arbitri
+                  </h4>
+                  <p className="text-[11px] text-blue-200 mt-0.5">
+                    Segnalazione candidato corso arbitri
+                  </p>
                 </div>
 
                 {/* Contenuto Email */}
@@ -749,16 +737,9 @@ export const CourseInfoFormTester: React.FC<CourseInfoFormTesterProps> = ({ onSu
                   </div>
                 </div>
 
-                {/* Footer Email con Logo Blu FIP */}
-                <div className="px-4 py-2.5 bg-slate-50 border-t border-slate-200 flex items-center justify-center space-x-2 text-[11px] text-slate-500">
-                  <img
-                    src="/assets/fip-logo-blue.png"
-                    alt="FIP"
-                    className="w-4 h-4 object-contain opacity-80"
-                  />
-                  <span>
-                    Comunicazione automatica generata per il Comitato Regionale CIA {formData.region}
-                  </span>
+                {/* Footer Email */}
+                <div className="px-4 py-2.5 bg-slate-50 border-t border-slate-200 text-center text-[11px] text-slate-500">
+                  Comunicazione automatica generata per il Comitato Regionale CIA {formData.region}
                 </div>
               </div>
             ) : (
